@@ -1,0 +1,86 @@
+plugins {
+    id "io.codearte.nexus-staging" version "0.21.2"
+}
+
+// local plugins
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+// include main build
+apply from: 'build.gradle'
+
+// to sign archive is needed the signing key in the `gradle.properties` file
+ext.enableSignArchives = project.findProperty('signing.keyId')
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+
+            pom.project {
+                name 'Nextflow'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'A DSL modelled around the UNIX pipe concept, that simplifies writing parallel and scalable pipelines in a portable manner'
+                url 'http://www.nextflow.io'
+
+                scm {
+                    connection 'scm:git:https://github.com/nextflow-io/nextflow'
+                    developerConnection 'scm:git:git@github.com:nextflow-io/nextflow.git'
+                    url 'https://github.com/nextflow-io/nextflow'
+                }
+
+                licenses {
+                    license {
+                        name 'Apache 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id nexusUsername
+                        name nexusFullName
+                        email nexusEmail
+                    }
+                }
+
+            }
+        }
+    }
+}
+
+signArchives.onlyIf { enableSignArchives }
+
+/*
+ * Configure Nextflow staging plugin -- https://github.com/Codearte/gradle-nexus-staging-plugin
+ * It adds the tasks
+ * - closeRepository
+ * - releaseRepository
+ * - closeAndReleaseRepository
+ */
+nexusStaging {
+    packageGroup = 'io.nextflow'
+    delayBetweenRetriesInMillis = 10_000
+}

@@ -1,0 +1,6 @@
+.idea
+.gradle
+.nextflow
+build/
+work/
+gradle.properties
