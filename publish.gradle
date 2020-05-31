@@ -9,8 +9,20 @@ apply plugin: 'signing'
 // include main build
 apply from: 'build.gradle'
 
+// patched as described here
+// http://forums.gradle.org/gradle/topics/gradle_task_groovydoc_failing_with_noclassdeffounderror
+tasks.withType(Groovydoc) {
+    groovyClasspath = project.configurations.groovyDoc
+    includes  = ["nextflow/**"]
+}
+
 // to sign archive is needed the signing key in the `gradle.properties` file
 ext.enableSignArchives = project.findProperty('signing.keyId')
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from configurations.groovyDoc
+}
 
 task sourcesJar(type: Jar) {
     classifier = 'sources'
@@ -18,7 +30,7 @@ task sourcesJar(type: Jar) {
 }
 
 artifacts {
-    archives sourcesJar
+    archives javadocJar, sourcesJar
 }
 
 signing {
@@ -39,16 +51,16 @@ uploadArchives {
             }
 
             pom.project {
-                name 'Nextflow'
+                name 'nf-ignite'
                 packaging 'jar'
                 // optionally artifactId can be defined here
-                description 'A DSL modelled around the UNIX pipe concept, that simplifies writing parallel and scalable pipelines in a portable manner'
+                description 'Apache Ignite executor for Nextflow pipeline system'
                 url 'http://www.nextflow.io'
 
                 scm {
-                    connection 'scm:git:https://github.com/nextflow-io/nextflow'
-                    developerConnection 'scm:git:git@github.com:nextflow-io/nextflow.git'
-                    url 'https://github.com/nextflow-io/nextflow'
+                    connection 'scm:git:https://github.com/nextflow-io/nf-ignite'
+                    developerConnection 'scm:git:git@github.com:nextflow-io/nf-ignite.git'
+                    url 'https://github.com/nextflow-io/nf-ignite'
                 }
 
                 licenses {

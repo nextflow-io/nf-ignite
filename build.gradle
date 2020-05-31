@@ -52,10 +52,12 @@ configurations {
     // see https://docs.gradle.org/4.1/userguide/dependency_management.html#sub:exclude_transitive_dependencies
     all*.exclude group: 'org.codehaus.groovy', module: 'groovy-all'
     all*.exclude group: 'org.codehaus.groovy', module: 'groovy-cli-picocli'
+    // groovydoc libs
+    groovyDoc.extendsFrom runtime
 }
 
 dependencies {
-    compile 'io.nextflow:nextflow:20.04.1'
+    compile 'io.nextflow:nextflow:20.05.0'
 
     compile ('org.apache.ignite:ignite-core:2.4.0')
     compile ('org.apache.ignite:ignite-slf4j:2.4.0')
@@ -71,6 +73,15 @@ dependencies {
     testCompile ('org.apache.ignite:ignite-spring:2.4.0') {
         exclude group: 'commons-logging', module: 'commons-logging'
     }
+
+    modules {
+        module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
+    }
+
+    // Documentation required libraries
+    groovyDoc 'org.fusesource.jansi:jansi:1.11'
+    groovyDoc "org.codehaus.groovy:groovy-groovydoc:2.5.11"
+    groovyDoc "org.codehaus.groovy:groovy-ant:2.5.11"
 }
 
 
