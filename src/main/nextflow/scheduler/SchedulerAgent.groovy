@@ -296,7 +296,7 @@ class SchedulerAgent implements Closeable {
 
                     // -- send to the executor
                     try {
-                        runningTasks[it.taskId] = new RunHolder(taskExecutor.submit( runTask(it) ))
+                        SchedulerAgent.this.runningTasks[it.taskId] = new RunHolder(taskExecutor.submit( runTask(it) ))
                     }
                     catch (RejectedExecutionException e) {
                         rollbackResources(it, true)

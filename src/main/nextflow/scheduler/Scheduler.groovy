@@ -150,7 +150,7 @@ class Scheduler {
         def nodes = ignite.compute().broadcast(new ClusterDiscovery())
 
         def buffer = new StringBuilder("+++ Initial cluster topology:\n")
-        nodes.each { node ->
+        for( NodeData node : nodes ) { 
             workerNodes[node.nodeId] = node
             buffer << '- ' << node.toString() << '\n'
         }
