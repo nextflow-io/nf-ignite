@@ -57,7 +57,7 @@ configurations {
 }
 
 dependencies {
-    compile 'io.nextflow:nextflow:20.08.0-SNAPSHOT'
+    compile 'io.nextflow:nextflow:20.08.0-edge'
 
     compile ('org.apache.ignite:ignite-core:2.4.0')
     compile ('org.apache.ignite:ignite-slf4j:2.4.0')
