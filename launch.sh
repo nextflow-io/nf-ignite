@@ -1,2 +1,2 @@
 set -x 
-./gradlew run --args "$(eval "echo $@")" 
+./gradlew launch --args "$(eval "echo $@")" 

@@ -1,4 +1,7 @@
+import org.apache.commons.codec.digest.DigestUtils
+
 /*
+ * Copyright 2020, Seqera Labs
  * Copyright 2013-2019, Centre for Genomic Regulation (CRG)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'commons-codec:commons-codec:1.10'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'idea'
@@ -23,7 +37,6 @@ group = 'io.nextflow'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
-
 
 sourceSets {
     main.java.srcDirs = []
@@ -54,15 +67,31 @@ configurations {
     all*.exclude group: 'org.codehaus.groovy', module: 'groovy-cli-picocli'
     // groovydoc libs
     groovyDoc.extendsFrom runtime
+    runtimeClasspath.exclude group: 'org.slf4j', module: 'slf4j-api'
+
+    launchRuntime
 }
 
 dependencies {
-    compile 'io.nextflow:nextflow:20.08.0-edge'
+    compileOnly 'io.nextflow:nextflow:21.12.1-edge'
+    compileOnly 'org.slf4j:slf4j-api:1.7.10'
+    compileOnly "org.codehaus.groovy:groovy:3.0.9"
+    compileOnly "org.codehaus.groovy:groovy-nio:3.0.9"
+    compileOnly 'org.pf4j:pf4j:3.4.1'
+
+    launchRuntime 'io.nextflow:nextflow:20.10.0-SNAPSHOT'
+    launchRuntime 'org.slf4j:slf4j-api:1.7.10'
+    launchRuntime "org.codehaus.groovy:groovy:3.0.9"
+    launchRuntime "org.codehaus.groovy:groovy-nio:3.0.9"
+    launchRuntime 'org.pf4j:pf4j:3.4.1'
 
     compile ('org.apache.ignite:ignite-core:2.4.0')
-    compile ('org.apache.ignite:ignite-slf4j:2.4.0')
+    compile ('org.apache.ignite:ignite-slf4j:2.4.0') { transitive = false }
 
-    testCompile ("org.codehaus.groovy:groovy-test:3.0.5") { exclude group: 'org.codehaus.groovy' }
+    testImplementation 'io.nextflow:nextflow:21.12.1-edge'
+    testImplementation "org.codehaus.groovy:groovy:3.0.9"
+    testImplementation "org.codehaus.groovy:groovy-nio:3.0.9"
+    testCompile ("org.codehaus.groovy:groovy-test:3.0.9") { exclude group: 'org.codehaus.groovy' }
     testCompile ("cglib:cglib-nodep:3.3.0")
     testCompile ("org.objenesis:objenesis:3.1")
     testCompile ("org.spockframework:spock-core:2.0-M3-groovy-3.0") { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
@@ -80,11 +109,78 @@ dependencies {
 
     // Documentation required libraries
     groovyDoc 'org.fusesource.jansi:jansi:1.11'
-    groovyDoc "org.codehaus.groovy:groovy-groovydoc:3.0.5"
-    groovyDoc "org.codehaus.groovy:groovy-ant:3.0.5"
+    groovyDoc "org.codehaus.groovy:groovy-groovydoc:3.0.9"
+    groovyDoc "org.codehaus.groovy:groovy-ant:3.0.9"
 }
 
 
-application {
-    mainClassName = 'nextflow.cli.Launcher'
+/*
+ * launcg nextflow for testing purpose 
+ */
+task launch(type: JavaExec) {
+    main = 'nextflow.cli.Launcher'
+    classpath configurations.launchRuntime
+    environment 'NXF_ANSI_LOG', 'false'
+    environment 'NXF_PLUGINS_MODE', 'prod'
+    environment 'NXF_PLUGINS_DIR', "$buildDir/plugins"
+    //jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8010'
 }
+
+// ---=== Plugin management ===---
+
+ext.pluginsDir = "$project.buildDir.path/plugins"
+ext.plugins_s3_url = 's3://www.nextflow.io/plugins'
+ext.plugins_http_url = 'http://www.nextflow.io.s3-website-eu-west-1.amazonaws.com/plugins'
+ext.plugins_index_url = 'https://raw.githubusercontent.com/nextflow-io/plugins/main/plugins.json'
+
+String computeSha512(File file) {
+    if( !file.exists() )
+        throw new GradleException("Missing file: $file -- cannot compute SHA-512")
+    return DigestUtils.sha512Hex(file.bytes)
+}
+
+String now() {
+    "${java.time.OffsetDateTime.now().format(java.time.format.DateTimeFormatter.ISO_DATE_TIME)}"
+}
+
+def timestamp = now()
+
+task plugin(type: Jar) {
+    into('classes') {
+        with jar
+    }
+    into('lib') {
+        from configurations.compile
+    }
+    manifest.from file('src/resources/META-INF/MANIFEST.MF')
+    archiveExtension = 'zip'
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
+    doLast {
+        // create the meta file
+        final zip = new File("$buildDir/libs/${project.name}-${project.version}.zip")
+        final meta = new File("$buildDir/libs/${project.name}-${project.version}.json")
+        meta.text = """\
+              {
+                "version": "${project.version}",
+                "date": "${timestamp}",
+                "url": "$plugins_http_url/${project.name}/${project.name}-${project.version}.zip",
+                "sha512sum": "${computeSha512(zip)}"
+              }
+            """.stripIndent()
+    }
+}
+
+task assemblePlugin(type: Copy) {
+    from plugin
+    into "$buildDir/plugins"
+}
+
+task targetLibs(type: Sync) {
+    from configurations.compile
+    into "$buildDir/target/libs"
+}
+
+assemble.dependsOn assemblePlugin
+compileGroovy.dependsOn targetLibs

@@ -26,6 +26,8 @@ import nextflow.scheduler.Protocol.TaskHolder
 import nextflow.script.ScriptType
 import nextflow.util.Duration
 import nextflow.util.ServiceName
+import org.pf4j.ExtensionPoint
+
 /**
  * A Nextflow executor based on Ignite services
  *
@@ -34,7 +36,7 @@ import nextflow.util.ServiceName
 @CompileStatic
 @ServiceName('ignite')
 @SupportedScriptTypes( [ScriptType.SCRIPTLET, ScriptType.GROOVY] )
-class IgExecutor extends Executor {
+class IgExecutor extends Executor implements ExtensionPoint {
 
     @PackageScope
     IgConnector connector

@@ -16,6 +16,8 @@
 
 package nextflow.daemon
 
+import static nextflow.Const.*
+
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -23,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import nextflow.Const
 import nextflow.file.FileHelper
+import nextflow.ignite.IgnitePlugin
 import nextflow.scheduler.Protocol
 import nextflow.util.ClusterConfig
 import nextflow.util.Duration
@@ -38,8 +41,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
-import static nextflow.Const.ROLE_MASTER
-import static nextflow.Const.ROLE_WORKER
 /**
  * Grid factory class. It can be used to create a {@link IgniteConfiguration} or the {@link Ignite} instance directly
  *
@@ -97,7 +98,16 @@ class IgGridFactory {
      *      also if named grid has already been started.
      */
     Ignite start() {
-        Ignition.start( config() )
+        final oldLdr = Thread.currentThread().getContextClassLoader()
+        try {
+            final plgLdr = IgnitePlugin.class.getClassLoader()
+            log.debug "+ Setting context class loader to=$plgLdr - previous=$oldLdr"
+            Thread.currentThread().setContextClassLoader(plgLdr)
+            Ignition.start( config() )
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(oldLdr)
+        }
     }
 
     /**
@@ -116,6 +126,10 @@ class IgGridFactory {
         System.setProperty('IGNITE_QUIET', 'false')
 
         IgniteConfiguration cfg = new IgniteConfiguration()
+        // set the classloader to allow loading classes from the plugin path
+        log.debug "+ Setting Ignite plugin classloader=${IgnitePlugin.class.getClassLoader()}"
+        cfg.setClassLoader(IgnitePlugin.class.getClassLoader())
+
         discoveryConfig(cfg)
         cacheConfig(cfg)
 

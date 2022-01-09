@@ -16,13 +16,14 @@
 
 package nextflow.daemon
 
+import static nextflow.Const.*
+
 import groovy.util.logging.Slf4j
 import nextflow.cli.CmdInfo
 import nextflow.scheduler.SchedulerAgent
 import nextflow.util.ServiceName
 import sun.misc.Signal
 import sun.misc.SignalHandler
-import static nextflow.Const.ROLE_WORKER
 /**
  * Launch the Ignite daemon
  *
