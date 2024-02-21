@@ -115,6 +115,8 @@ If your network does no support multicast discovery, you will need to specify th
 nextflow run <your pipeline> -process.executor ignite -cluster.join path:/net/shared/path
 ```
 
+Resource requests and other job characteristics can be controlled using the `cpus`, `disk`, and `memory` process directives.
+
 ## MPI Execution
 
 Nextflow is able to deploy and self-configure an Ignite cluster on demand, taking advantage of the Open [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) standard that is commonly available in grid and supercomputer facilities.
