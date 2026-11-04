@@ -16,33 +16,33 @@ jobs:
       fail-fast: false
 
     steps:
-    - name: Environment
-      run: env | sort 
+      - name: Environment
+        run: env | sort
 
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-        submodules: true
+      - name: Checkout
+        uses: actions/checkout@50fbc622fc4ef5163becd7fab6573eac35f8462e # ratchet:actions/checkout@v1
+        with:
+          fetch-depth: 1
+          submodules: true
 
-    - name: Setup Java
-      uses: actions/setup-java@v1
-      with:
-        java-version: '8.0.222' 
-        architecture: x64
+      - name: Setup Java
+        uses: actions/setup-java@0f62d2ad8407a414cddd4790bed06fd9ebda0f56 # ratchet:actions/setup-java@v1
+        with:
+          java-version: '8.0.222'
+          architecture: x64
 
-    - name: Compile
-      run: ./gradlew compileGroovy
+      - name: Compile
+        run: ./gradlew compileGroovy
 
-    - name: Tests
-      run: ./gradlew check
-      env:
-        GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+      - name: Tests
+        run: ./gradlew check
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
-    - name: Publish
-      if: failure()
-      run: bash pub-tests.sh github
-      env:
-        TEST_JDK: ${{ matrix.java_version }}
-        NXF_AWS_ACCESS: ${{ secrets.NXF_AWS_ACCESS }}
-        NXF_AWS_SECRET: ${{ secrets.NXF_AWS_SECRET }}
+      - name: Publish
+        if: failure()
+        run: bash pub-tests.sh github
+        env:
+          TEST_JDK: ${{ matrix.java_version }}
+          NXF_AWS_ACCESS: ${{ secrets.NXF_AWS_ACCESS }}
+          NXF_AWS_SECRET: ${{ secrets.NXF_AWS_SECRET }}
